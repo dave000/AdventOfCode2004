@@ -18,7 +18,7 @@ currentMachine = None
 afterSec = 100
 
 robotPositions = {}
-maxT = 10000000
+maxT = 10000
 def xMasTreeLeft(x):
      b = D(102)
      a = D(-102) / D(50) 
@@ -33,8 +33,8 @@ def robotPos(s, v, t):
      global maxX, maxY
      return ((s[0] + t * v[0]) % maxX, (s[1] + t * v[1]) % maxY)
 
-robotPositions[0] = []
-for i in range(1):
+for i in range(maxT):
+    robotPositions[i] = []
     for r in range(maxY):
         cols = []
         robotPositions[i].append(cols)
@@ -61,51 +61,65 @@ for line in input:
     s = (int(startValues[0]), int(startValues[1]))
     v = (int(velocityValues[0]), int(velocityValues[1]))
 
-    pos100 = robotPos(s, v, afterSec)
-
-
-    (x, y) = robotPos(s, v, 28)
-    if (x == 50):
-        robotPositions[0][y][x] = "|"
-        print('its 50')
-    else:
-        robotPositions[0][y][x] = "8"
-
-    fiftyTimes = is50(s, v)
-    if len(fiftyTimes) == 0:
-        continue
+    #pos100 = robotPos(s, v, afterSec)
+    beenHere = set()
+    for i in range(0, maxT):
+        (x, y) = robotPos(s, v, i)
+        if (x, y) in beenHere:
+            print("Stopped after", i)
+            break
+        beenHere.add((x, y))
+        robotPositions[i][y][x] = "8"
+       
     robot = {
         's' : s,
-        'v' : v,
-        'fiftyTimes' : fiftyTimes
+        'v' : v
     }
-    #print(robot)
+    print(robot)
     robots.append(robot)
 
-most50 = {}
-
-for r in robots:
-    for i in r['fiftyTimes']:
-        most50.setdefault(i, 0)
-        most50[i] += 1
-
-most = 0
-mostT = -1
-for t in most50:
-    if most50[t] > most:
-        most = most50[t]
-        mostT = t
-
-print("Most in 50", most, "at t", mostT)
-
 #exit(0)
-for t in robotPositions:
-    for rowX in robotPositions[t]:
+
+def notOnMap(seg):
+    return seg[0] >= maxX or seg[0] < 0 or seg[1] >= maxY or seg[1] < 0
+
+def findClusters(x, y, robotPositions, foundElements):
+    pos = (x, y)
+    if notOnMap(pos) or robotPositions[y][x] != '8' or pos in foundElements:
+        return
+
+    foundElements[(x, y)] = True
+        
+    findClusters(x, y - 1, robotPositions, foundElements)
+    findClusters(x, y + 1, robotPositions, foundElements)
+    findClusters(x + 1, y, robotPositions, foundElements)
+    findClusters(x + 1, y + 1, robotPositions, foundElements)
+    findClusters(x + 1, y - 1, robotPositions, foundElements)
+    findClusters(x - 1, y, robotPositions, foundElements)
+    findClusters(x - 1, y + 1, robotPositions, foundElements)
+    findClusters(x - 1, y - 1, robotPositions, foundElements)
+
+
+maxCluster = 0
+maxClusterT = 0
+printT = 7286
+for t in [7286]:
+    for rowX in range(len(robotPositions[t])):
         row = ""
-        for a in rowX:
-            row += str(a)
-        print(row)
-    print("#####################################################################################################")
-    break
+        for a in range(len(robotPositions[t][rowX])):
+            row += str(robotPositions[t][rowX][a])
+            foundClusters = {}
+            findClusters(rowX, a, robotPositions[t], foundClusters)
+            clusters = len(foundClusters)
+            if maxCluster < clusters:
+                maxCluster = clusters
+                maxClusterT = t
+                print("Cluster at", t, maxCluster)
+        if t == printT:
+            print(row)
+    if t == printT:
+        print("#####################################################################################################")
+
+print(maxCluster, maxClusterT)
 
 
